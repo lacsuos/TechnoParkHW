@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.16)
+project(HW2)
+
+add_library(SumDynamic SHARED sum_parallel.c)
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+target_link_libraries(SumDynamic PUBLIC pthread)
+add_executable(task main.c input.c)
+target_link_libraries(task SumDynamic pthread)
