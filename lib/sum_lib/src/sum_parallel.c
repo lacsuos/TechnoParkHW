@@ -11,7 +11,7 @@
 
 static sem_t semaphore;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
 
 typedef struct {
   const int *array;
@@ -22,13 +22,13 @@ typedef struct {
 
 static void *thread_func(void *arg) {
   int errflag;
-  data_t *data = (data_t *)arg;
   errflag = sem_wait(&semaphore);
   if (errflag){
     printf("Semaphore error! Executing program...\n");
     exit(-1);
   }
   long long sum = 0;
+  data_t *data = (data_t *)arg;
 
   errflag = pthread_mutex_lock(&mutex);
   if (errflag) {
@@ -36,8 +36,8 @@ static void *thread_func(void *arg) {
     exit(-1);
   }
 
+  
   int k = ++data->k;
-  errflag = pthread_cond_signal(&cond);
 
   errflag = pthread_mutex_unlock(&mutex);
   if (errflag) {
@@ -74,9 +74,6 @@ sum_error_t calculate_sum(long long *result, const int *array, const int len) {
   }
   int kernels = sysconf(_SC_NPROCESSORS_CONF);
   printf("kernels %d\n", kernels);
-  struct timespec timeout;
-  timeout.tv_sec = time(NULL) + 2;
-  timeout.tv_nsec = 0;
   pthread_t *pthreads = (pthread_t *)malloc(K_NUMBERS * sizeof(pthread_t));
   if (pthreads == NULL) {
     free(pthreads);
@@ -96,29 +93,9 @@ sum_error_t calculate_sum(long long *result, const int *array, const int len) {
       free(pthreads);
       return SUM_PTHREADCREATE;
     }
-
-    errflag = pthread_mutex_lock(&mutex);
-    if (errflag) {
-      free(pthreads);
-      return SUM_PTHREADMUTEX;
-    }
-
-    while (input.k == k && input.k != 10) {
-      errflag = pthread_cond_timedwait(&cond, &mutex, &timeout);
-      if (errflag == ETIMEDOUT) {
-        free(pthreads);
-        return SUM_PTHREADCOND;
-      }
-    }
-
-    errflag = pthread_mutex_unlock(&mutex);
-    if (errflag) {
-      free(pthreads);
-      return SUM_PTHREADMUTEX;
-    }
   }
   
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < K_NUMBERS; i++) {
     errflag = pthread_join(pthreads[i], NULL);
     if (errflag) {
       return SUM_PTHREADJOIN;

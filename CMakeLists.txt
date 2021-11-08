@@ -9,6 +9,12 @@ option(ASAN "Enable address sanitizer" ON)
 option(USAN "Enable undefined sanitizer" ON)
 option(TSAN "Enable thread sanitizer" OFF)
 
+option(COVERAGE "Enable coverage" OFF)
+if(COVERAGE)
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+endif()
+
 if(ASAN OR USAN OR TSAN)
     add_compile_options(-fno-omit-frame-pointer)
     
