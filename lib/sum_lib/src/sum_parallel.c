@@ -12,6 +12,7 @@
 
 static sem_t semaphore;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 typedef struct {
   const int *array;
@@ -30,13 +31,18 @@ static void *thread_func(void *arg) {
   long long sum = 0;
   data_t *data = (data_t *)arg;
 
-  errflag = pthread_mutex_lock(&mutex);
+   errflag = pthread_mutex_lock(&mutex);
   if (errflag) {
     printf("Unable to create mutex lock. Executing program...\n");
     exit(-1);
   }
 
   int k = ++data->k;
+  errflag = pthread_cond_signal(&cond);
+  if (errflag) {
+    printf("Unable to send signal. Executing program...\n");
+    exit(-1);
+  }
 
   errflag = pthread_mutex_unlock(&mutex);
   if (errflag) {
@@ -80,6 +86,9 @@ sum_error_t calculate_sum(long long *result, const int *array, const int len) {
   }
 
   int errflag;
+  struct timespec timeout;
+  timeout.tv_sec = time(NULL) + 2;
+  timeout.tv_nsec = 0;
   data_t input = {array, 0, len, 0};
   errflag = sem_init(&semaphore, 0, kernels);
   if (errflag) {
@@ -91,6 +100,26 @@ sum_error_t calculate_sum(long long *result, const int *array, const int len) {
     if (errflag) {
       free(pthreads);
       return SUM_PTHREADCREATE;
+    }
+
+    errflag = pthread_mutex_lock(&mutex);
+    if (errflag) {
+      free(pthreads);
+      return SUM_PTHREADMUTEX;
+    }
+
+    while (input.k == k && input.k != 10) {
+      errflag = pthread_cond_timedwait(&cond, &mutex, &timeout);
+      if (errflag == ETIMEDOUT) {
+        free(pthreads);
+        return SUM_PTHREADCOND;
+      }
+    }
+
+    errflag = pthread_mutex_unlock(&mutex);
+    if (errflag) {
+      free(pthreads);
+      return SUM_PTHREADMUTEX;
     }
   }
 
