@@ -42,11 +42,6 @@ jobs:
         - cmake -B build_ausan && make -C build_ausan
         - cd build_ausan
         - ctest --output-on-failure
-        - cd ..
-        - cmake -B build_tsan -DTSAN=ON -DUSAN=OFF -DASAN=OFF && make -C build_tsan
-        - cd build_tsan/lib/sum_lib/test
-        - ./test_parallel
-
     - stage: "Coverage"
       name: "Count coverage"
       script:

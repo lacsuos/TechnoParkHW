@@ -45,9 +45,6 @@ int main(int argc, char **argv) {
       printf("Unable to init semaphore! Error\n");
       free(array);
       return -1;
-    case SUM_PTHREADCOND:
-      printf("Condition method error! (timeout or unable to init)\n");
-      return -1;
     case SUM_PTHREADCREATE:
       printf("Unable to create thread! Error\n");
       free(array);
