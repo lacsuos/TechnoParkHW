@@ -27,6 +27,10 @@ int *read_file(int *len, const char *path) {
     if (k >= buff_size) {
       buff_size += BUFF_SIZE;
       array = realloc(array, buff_size * sizeof(int));
+      if(array == NULL){
+        fclose(fd);
+        return NULL;
+      }
     }
     array[k] = element;
     k += 1;
@@ -44,7 +48,7 @@ int *create_random(const int len) {
     return NULL;
   }
   for (int i = 0; i < len; i++) {
-    array[i] = 1;  // rand() % 100;
+    array[i] = rand() % 100;
   }
   return array;
 }

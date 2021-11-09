@@ -48,6 +48,7 @@ jobs:
         - cmake -B build -DASAN=OFF -DUSAN=OFF -DCOVERAGE=ON && make -C build
         - cd build
         - ctest --output-on-failure
+        - ./task
         - cd ..
         - curl -Os https://uploader.codecov.io/latest/linux/codecov
         - chmod +x codecov
