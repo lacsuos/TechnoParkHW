@@ -1,0 +1,62 @@
+dist: focal
+language: c
+
+os:
+  - linux
+
+compiler:
+  - gcc
+
+before_install:
+  - sudo apt-get update
+
+install:
+  - sudo apt-get -y install cppcheck
+  - sudo apt-get -y install clang-format
+  - sudo apt-get -y install llvm clang clang-tools
+  - sudo apt-get -y install gcovr
+  - sudo apt-get -y install valgrind
+  - sudo apt-get -y install python
+  - sudo apt-get -y install python3-pip
+  - sudo pip install cpplint
+  - sudo apt-get -y install libgtest-dev
+  - sudo apt-get -y install cmake
+  - sudo apt-get -y install googletest
+
+
+jobs:
+  include:
+    - stage: "StaticAnalysis"
+      name: "Static Analysis"
+      script:
+        - find . -regex '.*\.\(cpp\|hpp\|cu\|c\|h\)' -exec clang-format -style=google -i {} \;
+        - cppcheck --enable=all --inconclusive --suppress=missingInclude --check-config --error-exitcode=1 lib/* src/*
+        - clang-tidy lib/input_lib/src/*.c  -- -Ilib/input_lib/include/ -Ilib/sum_lib/include
+        - clang-tidy lib/sum_lib/src/*.c  -- -Ilib/input_lib/include/ -Ilib/sum_lib/include
+        - clang-tidy src/*  -- -Ilib/input_lib/include/ -Ilib/sum_lib/include
+        - cpplint --recursive --extensions=c,cpp,h --filter="-legal/copyright,-runtime/int,-build/include_subdir,-readability/casting,-whitespace/ending_newline,-runtime/threadsafe_fn" *
+        - cmake -B build && scan-build make -C build
+    - stage: "Tests with sanitizers"
+      name: "Tests with sanitizers"
+      script:
+        - cmake -B build_ausan && make -C build_ausan
+        - cd build_ausan
+        - ctest --output-on-failure
+    - stage: "Coverage"
+      name: "Count coverage"
+      script:
+        - cmake -B build -DASAN=OFF -DUSAN=OFF -DCOVERAGE=ON && make -C build
+        - cd build
+        - ctest --output-on-failure
+        - ./task
+        - cd ..
+        - curl -Os https://uploader.codecov.io/latest/linux/codecov
+        - chmod +x codecov
+        - ./codecov -f <(gcovr -e '.*/test*/.*' -x)
+    - stage: "Valgrind"
+      name: "Valgrind test"
+      script:
+        - cmake -B build -DASAN=OFF -DUSAN=OFF && make -C build 
+        - cd build/lib/sum_lib/test
+        - valgrind --tool=memcheck --leak-check=full --leak-resolution=med --error-exitcode=1 --track-origins=yes ./test_parallel
+        - valgrind --tool=memcheck --leak-check=full --leak-resolution=med --error-exitcode=1 --track-origins=yes ./test_static
