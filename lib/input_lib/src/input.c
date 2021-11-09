@@ -27,7 +27,7 @@ int *read_file(int *len, const char *path) {
     if (k >= buff_size) {
       buff_size += BUFF_SIZE;
       array = realloc(array, buff_size * sizeof(int));
-      if(array == NULL){
+      if (array == NULL) {
         fclose(fd);
         return NULL;
       }

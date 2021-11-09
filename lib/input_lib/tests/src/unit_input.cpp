@@ -21,4 +21,4 @@ TEST(INPUT, read_file_test) {
   free(array);
   array = read_file(&len, "doesnotexist.txt");
   ASSERT_TRUE(array == nullptr);
-  }
+}

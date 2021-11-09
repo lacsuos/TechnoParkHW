@@ -1,4 +1,3 @@
-#include "sum.h"
 #include <errno.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -7,11 +6,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "sum.h"
+
 #define K_NUMBERS 10
 
 static sem_t semaphore;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
 
 typedef struct {
   const int *array;
@@ -23,7 +23,7 @@ typedef struct {
 static void *thread_func(void *arg) {
   int errflag;
   errflag = sem_wait(&semaphore);
-  if (errflag){
+  if (errflag) {
     printf("Semaphore error! Executing program...\n");
     exit(-1);
   }
@@ -36,7 +36,6 @@ static void *thread_func(void *arg) {
     exit(-1);
   }
 
-  
   int k = ++data->k;
 
   errflag = pthread_mutex_unlock(&mutex);
@@ -61,7 +60,7 @@ static void *thread_func(void *arg) {
     exit(-1);
   }
   errflag = sem_post(&semaphore);
-  if (errflag){
+  if (errflag) {
     printf("Semaphore error! Executing program...\n");
     exit(-1);
   }
@@ -69,7 +68,7 @@ static void *thread_func(void *arg) {
 }
 
 sum_error_t calculate_sum(long long *result, const int *array, const int len) {
-  if (array == NULL){
+  if (array == NULL) {
     return SUM_MEMORYERROR;
   }
   int kernels = sysconf(_SC_NPROCESSORS_CONF);
@@ -83,7 +82,7 @@ sum_error_t calculate_sum(long long *result, const int *array, const int len) {
   int errflag;
   data_t input = {array, 0, len, 0};
   errflag = sem_init(&semaphore, 0, kernels);
-  if (errflag){
+  if (errflag) {
     free(pthreads);
     return SUM_SEMAPHORE;
   }
@@ -94,7 +93,7 @@ sum_error_t calculate_sum(long long *result, const int *array, const int len) {
       return SUM_PTHREADCREATE;
     }
   }
-  
+
   for (int i = 0; i < K_NUMBERS; i++) {
     errflag = pthread_join(pthreads[i], NULL);
     if (errflag) {
