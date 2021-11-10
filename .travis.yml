@@ -1,0 +1,64 @@
+dist: focal
+language: c
+
+os:
+  - linux
+
+compiler:
+  - gcc
+
+before_install:
+  - sudo apt-get update
+
+install:
+  - sudo apt-get -y install cppcheck
+  - sudo apt-get -y install clang-format
+  - sudo apt-get -y install llvm clang clang-tools
+  - sudo apt-get -y install gcovr
+  - sudo apt-get -y install valgrind
+  - sudo apt-get -y install python
+  - sudo apt-get -y install python3-pip
+  - sudo pip install cpplint
+  - sudo apt-get -y install libgtest-dev
+  - sudo apt-get -y install cmake
+  - sudo apt-get -y install googletest
+
+before_script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+
+jobs:
+  include:
+    - stage: "StaticAnalysis"
+      name: "Static Analysis"
+      script:
+        - cd ..
+        - clang-format -i src/*
+        - clang-format -i test/*
+        - cppcheck --enable=all --inconclusive --suppress=missingIncludeSystem --check-config --error-exitcode=1 src/
+    - stage: "Testing"
+      name: "Build and test"
+      script:
+        - cmake -DENABLE_ASAN=ON -DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" ..
+        - make
+        - ./test_quadra
+        - cmake -DENABLE_TSAN=ON -DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" ..
+        - make
+        - ./test_quadra
+        - cmake -DENABLE_USAN=ON -DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" ..
+        - make
+        - ./test_quadra
+    - stage: "Coverage"
+      name: "Count coverage"
+      script:
+        - ./test_quadra
+        - cd ..
+        - gcovr -r .
+    - stage: "Valgrind"
+      name: "Valgrind test"
+      script: 
+        - valgrind --tool=memcheck --leak-check=full --leak-resolution=med --error-exitcode=1 --track-origins=yes ./test_quadra
+      
+
